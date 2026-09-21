@@ -1,3 +1,2 @@
 pytelegrambotapi
-google-cloud-aiplatform
-google-auth
+google-genai
