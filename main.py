@@ -5,7 +5,7 @@ from vertexai.generative_models import GenerativeModel
 from google.oauth2 import credentials
 
 # --- НАСТРОЙКИ ---
-TELEGRAM_BOT_TOKEN = "8627701569:AAF0TnYVULYXcPRKEqYg2xoe676Bwfiwg9s"
+TELEGRAM_BOT_TOKEN = "8974825461:AAELL0AnAwHEWyuZ4uQ6HU_Irh-ajLFt6wA"
 CHANNEL_ID = "-1004499803511"
 
 # Ваш токен Google Cloud / Vertex AI
@@ -79,5 +79,5 @@ def handle_message(message):
     except Exception as e:
         bot.reply_to(message, f"Ошибка: {e}")
 
-print("Anime Factory 24/7 успешно запущен через Vertex AI!")
+print("Anime Factory 24/7 успешно запущен через Vertex AI с новым токеном!")
 bot.infinity_polling()
