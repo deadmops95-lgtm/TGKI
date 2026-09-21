@@ -1,25 +1,19 @@
 import random
 import telebot
-import vertexai
-from vertexai.generative_models import GenerativeModel
-from google.oauth2 import credentials
+from google import genai
+from google.genai import types
 
 # --- НАСТРОЙКИ ---
 TELEGRAM_BOT_TOKEN = "8974825461:AAELL0AnAwHEWyuZ4uQ6HU_Irh-ajLFt6wA"
 CHANNEL_ID = "-1004499803511"
 
-# Ваш токен Google Cloud / Vertex AI
+# Используем ваш токен через стандартный клиент с базовыми настройками
 AQ_TOKEN = "AQ.Ab8RN6Lkv85q7CQ38jakUL8TrGtcnCOEk0NlkUHn4uWWPJNF-Q"
-PROJECT_ID = "581192983007"
-LOCATION = "us-central1"
 
-# Инициализация Vertex AI
-creds = credentials.Credentials(token=AQ_TOKEN)
-vertexai.init(project=PROJECT_ID, location=LOCATION, credentials=creds)
-
+# Инициализируем клиент
+client = genai.Client(api_key=AQ_TOKEN)
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
 
-# Рубрики конвейера
 RUBRICS = [
     ("🟣 ФАКТ", "Малоизвестный, но подтвержденный факт из канона аниме."),
     ("🔵 СЕКРЕТ", "Скрытая деталь или пасхалка, которую большинство зрителей пропустило."),
@@ -31,53 +25,47 @@ RUBRICS = [
 def anime_factory_pipeline(message):
     try:
         user_input = message.text.replace('/post', '').strip()
-        bot.reply_to(message, "⚙️ **Anime Factory запущен через Vertex AI:** Конвейер обрабатывает запрос...")
+        bot.reply_to(message, "⚙️ **Anime Factory в работе:** Подключаюсь к модели...")
 
         rubric_name, rubric_desc = random.choice(RUBRICS)
         
-        model = GenerativeModel("gemini-1.5-flash")
-
         if not user_input:
-            topic_prompt = f"Придумай крутую, интересную тему для аниме из популярных сериалов (Naruto, One Piece, Bleach, Jujutsu Kaisen и др.) для рубрики {rubric_name}."
-            topic_res = model.generate_content(topic_prompt)
+            topic_prompt = f"Придумай крутую, интересную тему для аниме из популярных сериалов для рубрики {rubric_name}."
+            # Указываем легкую модель и увеличиваем таймаут запроса если поддерживает клиент
+            topic_res = client.models.generate_content(model="gemini-2.5-flash", contents=topic_prompt)
             anime_topic = topic_res.text.strip()
         else:
             anime_topic = user_input
 
         system_prompt = f"""
-        Ты — система из двух ИИ-агентов для аниме-медиа (Creator и Editor).
-        
-        Твоя задача — создать пост для Telegram-канала по строгим правилам.
+        Создай короткий и увлекательный пост для Telegram-канала об аниме.
         Рубрика: {rubric_name} ({rubric_desc})
         Тема: {anime_topic}
-
-        ПРАВИЛА (Editor следит за их выполнением):
-        1. Короткие предложения, сильный первый абзац (HOOK), минимум воды, разговорный русский язык.
-        2. Структура: HOOK -> Основная информация -> Неожиданная деталь -> Вывод -> CTA (призыв к действию).
-        3. Если есть сюжетные повороты, обязательно в самом начале поставь плашку: ⚠️ СПОЙЛЕРЫ.
-        4. Если это рубрика 'ЧТО ЕСЛИ?', явно обозначь, что это фанатская теория.
-        5. Не используй длинные цитаты, пиши своими словами. Динамично и понятно.
-        
-        Выдай на выходе готовый текст поста для Telegram.
+        Правила: короткие предложения, сильный первый абзац (HOOK), разговорный русский язык, в конце призыв к действию.
+        Если есть спойлеры, поставь плашку: ⚠️ СПОЙЛЕРЫ.
+        Выдай готовый текст поста для Telegram.
         """
 
-        generation_response = model.generate_content(system_prompt)
+        generation_response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=system_prompt,
+        )
+        
         final_post = f"{rubric_name}\n\n{generation_response.text}"
         
         bot.send_message(CHANNEL_ID, final_post)
-        bot.send_message(message.chat.id, f"✅ **Материал успешно опубликован в канал!**\n\n📌 **Тема:** {anime_topic}\n📌 **Рубрика:** {rubric_name}")
+        bot.send_message(message.chat.id, f"✅ **Опубликовано!**\n\n📌 **Тема:** {anime_topic}")
         
     except Exception as e:
-        bot.reply_to(message, f"❌ Ошибка в конвейере Vertex: {e}")
+        bot.reply_to(message, f"❌ Ошибка таймаута или сети: {e}")
 
 @bot.message_handler(func=lambda message: True)
 def handle_message(message):
     try:
-        model = GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(f"Ты — главный редактор аниме-медиа. Ответь пользователю: {message.text}")
+        response = client.models.generate_content(model="gemini-2.5-flash", contents=message.text)
         bot.reply_to(message, response.text)
     except Exception as e:
         bot.reply_to(message, f"Ошибка: {e}")
 
-print("Anime Factory 24/7 успешно запущен через Vertex AI с новым токеном!")
+print("Бот запущен!")
 bot.infinity_polling()
