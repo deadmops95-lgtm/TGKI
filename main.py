@@ -10,10 +10,10 @@ CHANNEL_ID = "-1004499803511"
 
 # Ваш токен Google Cloud / Vertex AI
 AQ_TOKEN = "AQ.Ab8RN6Lkv85q7CQ38jakUL8TrGtcnCOEk0NlkUHn4uWWPJNF-Q"
-PROJECT_ID = "581192983007"  # ID вашего проекта из консоли Google Cloud
-LOCATION = "us-central1"     # Стандартный рабочий регион
+PROJECT_ID = "581192983007"
+LOCATION = "us-central1"
 
-# Создаем учетные данные OAuth из вашего токена и инициализируем Vertex AI
+# Инициализация Vertex AI
 creds = credentials.Credentials(token=AQ_TOKEN)
 vertexai.init(project=PROJECT_ID, location=LOCATION, credentials=creds)
 
@@ -35,7 +35,6 @@ def anime_factory_pipeline(message):
 
         rubric_name, rubric_desc = random.choice(RUBRICS)
         
-        # Используем модель через Vertex AI SDK
         model = GenerativeModel("gemini-1.5-flash")
 
         if not user_input:
